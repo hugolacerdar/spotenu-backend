@@ -1,1 +1,1 @@
-# spotenu-backend
+# Backend for Spotenu
