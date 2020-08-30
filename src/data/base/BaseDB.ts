@@ -1,7 +1,7 @@
 import SetupError from "../../error/SetupError";
 import knex from "knex";
 
-export abstract class BaseDB {
+export default abstract class BaseDB {
     protected tableNames = {
         users: "sptn_user",
         description: "sptn_band_desc"
