@@ -29,7 +29,7 @@ export default class User {
         return this.email;
     }
 
-    public getRole(): string {
+    public getRole(): UserRole {
         return this.role;
     }
 
@@ -55,7 +55,7 @@ export default class User {
                     data.email,
                     data.role,
                     data.password,
-                    data.is_Approved,
+                    data.isApproved,
                     data.description
                     ));
         }
@@ -67,7 +67,7 @@ export default class User {
                 data.email,
                 data.role,
                 data.password,
-                data.is_Approved
+                data.isApproved
                 ));
     }
 
