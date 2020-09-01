@@ -4,7 +4,7 @@ import User, { UserRole } from "../model/User";
 export default class UserDB extends BaseDB {
     public async getUserByEmailOrUsername(credential: string): Promise<User | undefined> {
         const user = await this.getConnection().raw(`
-            SELECT id_user, name, email, username, role, password, is_approved, description 
+            SELECT id_user AS id, name, email, username, role, password, is_approved as isApproved, description 
             FROM sptn_user
             LEFT JOIN sptn_band_desc
             ON id_user = id_band
@@ -12,8 +12,27 @@ export default class UserDB extends BaseDB {
             OR email = "${credential}";
         `)
 
-        return User.toUser(user[0]);
-    }
+        const input = user[0][0];
+
+        if (input.role === "BAND") {
+            return new User(input.id,
+                input.name,
+                input.email,
+                input.username,
+                input.role,
+                input.password,
+                Boolean(input.isApproved),
+                input.description);
+        }
+        
+        return new User(input.id,
+            input.name,
+            input.email,
+            input.username,
+            input.role,
+            input.password,
+            Boolean(input.isApproved));    
+        }
 
     public async getUserById(id: string): Promise<User | undefined> {
         const user = await this.getConnection().raw(`
@@ -49,7 +68,7 @@ export default class UserDB extends BaseDB {
                 username: user.getUsername(),
                 role: user.getRole(),
                 password: user.getPassword(),
-                is_approved: false
+                isApproved: false
             }
 
             const descToInsert = {
@@ -58,12 +77,12 @@ export default class UserDB extends BaseDB {
             }
 
             await this.getConnection().raw(`
-                INSERT ${this.tableNames.users}() VALUES("${userToInsert.id}", "${userToInsert.name}", "${userToInsert.email}", "${userToInsert.username}", "${userToInsert.role}", "${userToInsert.password}", ${userToInsert.is_approved});
-                INSERT ${this.tableNames.description}() VALUES("${descToInsert.id}", "${descToInsert.description}");
-            `)
+                INSERT ${this.tableNames.users}() VALUES("${userToInsert.id}", "${userToInsert.name}", "${userToInsert.email}", "${userToInsert.username}", "${userToInsert.role}", "${userToInsert.password}", ${userToInsert.isApproved});
+                `);
+            await this.getConnection().raw(`INSERT ${this.tableNames.description}() VALUES("${descToInsert.id}", "${descToInsert.description}")`);
         } else {
             await this.getConnection().raw(`
-                INSERT ${this.tableNames.users}() VALUES("${user.getId()}", "${user.getName()}", "${user.getEmail()}", "${user.getUsername}", "${user.getRole()}", "${user.getPassword()}", ${user.getApprovalStatus()});
+                INSERT ${this.tableNames.users}() VALUES("${user.getId()}", "${user.getName()}", "${user.getEmail()}", "${user.getUsername()}", "${user.getRole()}", "${user.getPassword()}", ${user.getApprovalStatus()});
             `)
         }
     }
