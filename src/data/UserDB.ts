@@ -24,38 +24,49 @@ export default class UserDB extends BaseDB {
                 Boolean(input.isApproved),
                 input.description);
         }
-        
+
         return new User(input.id,
             input.name,
             input.email,
             input.username,
             input.role,
             input.password,
-            Boolean(input.isApproved));    
-        }
+            Boolean(input.isApproved));
+    }
 
     public async getUserById(id: string): Promise<User | undefined> {
         const user = await this.getConnection().raw(`
-            SELECT id_user, name, email, username, role, password, is_approved, description 
+            SELECT id_user, name, email, username, role, password, is_approved AS isApproved, description 
             FROM sptn_user
             LEFT JOIN sptn_band_desc
             ON id_user = id_band
             WHERE id_user = "${id}";
         `)
 
-        if (user[0].role === "BAND") {
-            return User.toUser(user[0]);
+        const input = user[0][0];
+
+        if (input.role === "BAND") {
+            return new User(
+                input.id,
+                input.name,
+                input.email,
+                input.username,
+                input.role,
+                input.password,
+                Boolean(input.isApproved),
+                input.description
+            );
         }
 
         return new User(
-            user[0].id,
-            user[0].name,
-            user[0].username,
-            user[0].email,
-            user[0].role,
-            user[0].password,
-            user[0].is_approved
-            );
+            input.id,
+            input.name,
+            input.email,
+            input.username,
+            input.role,
+            input.password,
+            Boolean(input.isApproved)
+        );
     }
 
     public async createUser(user: User): Promise<void> {
@@ -85,5 +96,34 @@ export default class UserDB extends BaseDB {
                 INSERT ${this.tableNames.users}() VALUES("${user.getId()}", "${user.getName()}", "${user.getEmail()}", "${user.getUsername()}", "${user.getRole()}", "${user.getPassword()}", ${user.getApprovalStatus()});
             `)
         }
+    }
+
+    public async getAllBands(): Promise<any> {
+
+        const bandsRaw = await this.getConnection().raw(`
+            SELECT name, email, username, is_approved AS isApproved
+            FROM ${this.tableNames.users}
+            WHERE role = "BAND";
+        `);
+
+        const bandsOutput: any[] = bandsRaw[0].map((band: any) => {
+            return {
+                name: band.name,
+                email: band.email,
+                username: band.username,
+                isApproved: Boolean(band.isApproved)
+
+            };
+        });
+
+        return bandsOutput;
+    }
+
+    public async approveBand(id: string): Promise<void> {
+        await this.getConnection().raw(`
+        UPDATE ${this.tableNames.users} 
+        SET is_approved = true
+        WHERE id_user = "${id}";
+        `);
     }
 }
