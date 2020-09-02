@@ -6,9 +6,12 @@ import Cypher from "../services/Cypher";
 import Authorizer from "../services/Authorizer";
 import IdGenerator from "../services/IdGenerator";
 import InvalidInputError from "../error/InvalidInput";
-import { UserRole } from "../model/User";
+import User, { UserRole } from "../model/User";
 import UnauthorizedError from "../error/UnauthorizedError";
 import SigninBusiness from "../business/SigninBusiness";
+import GetBandsBusiness from "../business/GetBandsBusiness";
+import ApproveBandBusiness from "../business/ApproveBandBusiness";
+import InvalidInput from "../error/InvalidInput";
 
 export default class UserController {
     public signup = async (req: Request, res: Response) => {
@@ -60,12 +63,15 @@ export default class UserController {
 
             const user = await signupBusiness.execute(input);
 
-            const token = authorizer.generateToken({
+            if(user.getRole() !== UserRole.BAND){
+                const token = authorizer.generateToken({    
                 userId: user.getId(),
                 userRole: user.getRole()
-            });
+                });
+                res.status(200).send({ token });
+            }
 
-            res.status(200).send({ token });
+            res.status(200).send({ message: "OK" });
         } catch(err){
             res.status(err.customErrorCode || 400).send({
                 message: err.message,
@@ -107,6 +113,61 @@ export default class UserController {
             });
         } finally{
             await BaseDB.destroyConnection();
+        }
+    }
+
+    public getBands = async(req: Request, res: Response) => {
+        try {
+            const getBandsBusiness = new GetBandsBusiness(new UserDB());
+            const authorizer = new Authorizer();
+
+            const token = req.headers.authorization;
+
+            if(!token || authorizer.retrieveDataFromToken(token).userRole !== UserRole.ADMIN){
+                throw new UnauthorizedError("Only admins can perform this request");
+            }
+
+            const bands = await getBandsBusiness.execute();
+
+            res.status(200).send({ bands });
+        } catch(err) {
+            res.status(err.customErrorCode || 400).send({ 
+                message: err.message
+            })
+        } finally {
+            BaseDB.destroyConnection();
+        }
+    }
+
+    public approveBand = async(req: Request, res: Response) => {
+        try {
+            const approveBandBusiness = new ApproveBandBusiness(new UserDB());
+            const authorizer = new Authorizer();
+
+            const token = req.headers.authorization;
+            const id = req.body.id;
+
+            if(!token){
+                throw new UnauthorizedError("Missing token: only admins can perform this request");
+            }
+
+            if(authorizer.retrieveDataFromToken(token).userRole !== UserRole.ADMIN){
+                throw new UnauthorizedError("Invalid role: only admins can perform this request");
+            }
+
+            if(!id){
+                throw new InvalidInput("Missing id");
+            }
+
+            await approveBandBusiness.execute(id);
+
+            res.status(200).send({ message: "OK" });
+        } catch(err) {
+            res.status(err.customErrorCode || 400).send({ 
+                message: err.message
+            })
+        } finally {
+            BaseDB.destroyConnection();
         }
     }
 }
