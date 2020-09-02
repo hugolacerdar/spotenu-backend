@@ -16,6 +16,7 @@ export default class Authorizer {
 
     public retrieveDataFromToken(token: string): TokenData {
         const data = jwt.verify(token, this.secretKey()) as any;
+
         return {
             userId: data.userId,
             userRole: User.toUserRole(data.userRole)
