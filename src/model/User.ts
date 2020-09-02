@@ -75,10 +75,10 @@ export default class User {
         switch(data){
             case "BAND":
                 return UserRole.BAND;
-            case "FREE USER":
-                return UserRole.FREE_USER;
-            case "PREMIUM USE":
-                return UserRole.PREMIUM_USER;
+            case "FREE LISTENER":
+                return UserRole.FREE_LISTENER;
+            case "PREMIUM LISTENER":
+                return UserRole.PREMIUM_LISTENER;
             case "ADMIN":
                 return UserRole.ADMIN;
             default:
@@ -89,7 +89,7 @@ export default class User {
 
 export enum UserRole {
     BAND = "BAND",
-    FREE_USER = "FREE LISTENER",
-    PREMIUM_USER = "PREMIUM LISTENER",
+    FREE_LISTENER = "FREE LISTENER",
+    PREMIUM_LISTENER = "PREMIUM LISTENER",
     ADMIN = "ADMIN"
 };
