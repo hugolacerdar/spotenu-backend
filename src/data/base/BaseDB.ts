@@ -4,7 +4,8 @@ import knex from "knex";
 export default abstract class BaseDB {
     protected tableNames = {
         users: "sptn_user",
-        description: "sptn_band_desc"
+        description: "sptn_band_desc",
+        musicGenres: "sptn_music_genre"
     }
 
     private validateSetupData() {
