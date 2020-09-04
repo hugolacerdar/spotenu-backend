@@ -3,7 +3,7 @@ import { AddressInfo } from "net";
 import UserDB from "./data/UserDB";
 import BaseDB from "./data/base/BaseDB";
 
-const server = app.listen(process.env.PORT || 3000, () => {
+const server = app.listen(process.env.PORT || 3001, () => {
   if (server) {
     console.log(
       `Server listening on http://localhost:${

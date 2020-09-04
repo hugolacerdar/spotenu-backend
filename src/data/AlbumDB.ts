@@ -13,4 +13,19 @@ export default class AlbumDB extends BaseDB {
         `);
         }
     }
+
+    public async isBandAllowed(id_band: string, id_album: string): Promise<boolean> {
+        const count = await this.getConnection().raw(`
+            SELECT COUNT(*) AS value
+            FROM ${this.tableNames.musicAlbum}
+            WHERE id_band = "${id_band}"
+            AND id_album = "${id_album}";
+        `);
+        
+        if(count[0][0].value === 0){
+            return false;
+        }
+        
+        return true;
+    }
 }
