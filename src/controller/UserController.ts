@@ -99,7 +99,7 @@ export default class UserController {
             if(!user.getApprovalStatus()){
                 throw new UnauthorizedError("Unapproved band")
             }
-
+            
             const authorizer = new Authorizer();
             const token = authorizer.generateToken({
                 userId: user.getId(),
