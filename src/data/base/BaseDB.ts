@@ -5,7 +5,10 @@ export default abstract class BaseDB {
     protected tableNames = {
         users: "sptn_user",
         description: "sptn_band_desc",
-        musicGenres: "sptn_music_genre"
+        musicGenres: "sptn_music_genre",
+        musicAlbum: "sptn_music_album",
+        albumGenre: "sptn_album_genre",
+        musics: "sptn_music"
     }
 
     private validateSetupData() {
