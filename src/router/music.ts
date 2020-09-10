@@ -3,6 +3,7 @@ import MusicController from "../controller/MusicController";
 
 const musicRouter = Router();
 
-musicRouter.post("/add", new MusicController().createAlbum);
+musicRouter.post("/add", new MusicController().createMusic);
+musicRouter.get("/search", new MusicController().getByText);
 
 export default musicRouter;

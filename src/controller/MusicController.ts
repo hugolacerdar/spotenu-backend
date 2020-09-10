@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import MusicDB from "../data/MusicDB";
 import AlbumDB from "../data/AlbumDB";
 import CreateMusicBusiness from "../business/CreateMusicBusiness";
+import SearchMusicBusiness from "../business/SearchMusicBusiness";
 import Authorizer from "../services/Authorizer";
 import IdGenerator from "../services/IdGenerator";
 import InvalidInput from "../error/InvalidInput";
@@ -10,7 +11,7 @@ import { UserRole } from "../model/User";
 import BaseDB from "../data/base/BaseDB";
 
 export default class MusicController {
-    public createAlbum = async (req: Request, res: Response) => {
+    public createMusic= async (req: Request, res: Response) => {
         try {
             const createMusicBusiness = new CreateMusicBusiness(new MusicDB(), new IdGenerator());
             const authorizer = new Authorizer();
@@ -38,6 +39,44 @@ export default class MusicController {
             await createMusicBusiness.execute(title, albumId);
 
             res.status(200).send({ message: "OK" });
+
+        } catch(err) {
+            res.status(err.customErrorCode || 400).send({
+                message: err.message
+            })
+        } finally {
+            BaseDB.destroyConnection();
+        }
+    }
+
+    public getByText = async (req: Request, res: Response) => {
+        try {
+            const searchMusicBusiness = new SearchMusicBusiness(new MusicDB());
+
+            const authorizer = new Authorizer();
+    
+            const token = req.headers.authorization;
+            
+            if (!token) {
+                throw new UnauthorizedError("Only listeners can search for musics by text");
+            }
+
+            const userRole = authorizer.retrieveDataFromToken(token).userRole;
+
+            if (userRole !== UserRole.FREE_LISTENER && userRole !== UserRole.PREMIUM_LISTENER) {
+                throw new UnauthorizedError("Only listeners can search for musics by text");
+            }
+
+            const text = req.query.text as string;
+            const page = Number(req.query.page);
+
+            if(!text || !page){
+                throw new InvalidInput("Missing input data")
+            }
+
+            const result = await searchMusicBusiness.execute(text, page);
+
+            res.status(200).send({ result });
 
         } catch(err) {
             res.status(err.customErrorCode || 400).send({
