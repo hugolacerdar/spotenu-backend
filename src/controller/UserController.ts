@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import BaseDB from "../data/base/BaseDB";
 import UserDB from "../data/UserDB";
 import SignupBusiness from "../business/SignupBusiness";
+import UpgradeListenerBusiness from "../business/UpgradeListenerBusiness";
 import Cypher from "../services/Cypher";
 import Authorizer from "../services/Authorizer";
 import IdGenerator from "../services/IdGenerator";
@@ -160,6 +161,38 @@ export default class UserController {
             }
 
             await approveBandBusiness.execute(id);
+
+            res.status(200).send({ message: "OK" });
+        } catch(err) {
+            res.status(err.customErrorCode || 400).send({ 
+                message: err.message
+            })
+        } finally {
+            BaseDB.destroyConnection();
+        }
+    }
+
+    public upgradeListener = async(req: Request, res: Response) => {
+        try {
+            const upgradeListenerBusiness = new UpgradeListenerBusiness(new UserDB());
+            const authorizer = new Authorizer();
+
+            const token = req.headers.authorization;
+            const id = req.body.id;
+
+            if(!token){
+                throw new UnauthorizedError("Missing token: only admins can perform this request");
+            }
+
+            if(authorizer.retrieveDataFromToken(token).userRole !== UserRole.ADMIN){
+                throw new UnauthorizedError("Invalid user role: only admins can perform this request");
+            }
+
+            if(!id){
+                throw new InvalidInput("Missing id");
+            }
+
+            await upgradeListenerBusiness.execute(id);
 
             res.status(200).send({ message: "OK" });
         } catch(err) {

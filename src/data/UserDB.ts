@@ -126,4 +126,12 @@ export default class UserDB extends BaseDB {
         WHERE id_user = "${id}";
         `);
     }
+
+    public async upgradeListenerSubscription(id: string): Promise<void> {
+        await this.getConnection().raw(`
+        UPDATE ${this.tableNames.users} 
+        SET role = "PREMIUM LISTENER"
+        WHERE id_user = "${id}";
+        `);
+    }
 }
