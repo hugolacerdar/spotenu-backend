@@ -30,4 +30,52 @@ export default class MusicDB extends BaseDB {
 
         return result;
     }
+
+    public async getMusicDataById(id_music: string): Promise<any> {
+        const dataRaw = await this.getConnection().raw(`
+        SELECT
+            id_music AS idMusic, 
+            ${this.tableNames.musics}.name AS musicTitle, 
+            id_album AS idAlbum, 
+            ${this.tableNames.musicAlbum}.name AS albumTitle, 
+            id_band AS idBand, 
+            ${this.tableNames.users}.name AS bandName,
+            ${this.tableNames.musicGenres}.id_genre AS idGenre,
+            ${this.tableNames.musicGenres}.name as genreName
+        FROM sptn_music
+        INNER JOIN sptn_music_album
+            USING(id_album)
+        INNER JOIN sptn_album_genre
+            USING(id_album)
+        INNER JOIN sptn_music_genre
+            USING(id_genre)
+        INNER JOIN sptn_user
+            ON id_band = id_user
+        WHERE id_music = "${id_music}";
+        `);
+
+        console.log("dataRaw", dataRaw[0]);
+        const data = dataRaw[0]; 
+        console.log("data", data)
+        const genresId = data.map((item: any) => {
+            return item.idGenre;
+        });
+
+        const genresName = data.map((item: any) => {
+            return item.genreName;
+        });
+
+        const result = {
+            musicId: data[0].idMusic,
+            musicTitle: data[0].musicTitle,
+            albumId: data[0].idAlbum,
+            albumTitle: data[0].albumTitle,
+            bandId: data[0].idBand,
+            bandName: data[0].bandName,
+            genresId,
+            genresName           
+        }
+
+        return result;
+    }
 }

@@ -3,6 +3,7 @@ import MusicDB from "../data/MusicDB";
 import AlbumDB from "../data/AlbumDB";
 import CreateMusicBusiness from "../business/CreateMusicBusiness";
 import SearchMusicBusiness from "../business/SearchMusicBusiness";
+import GetMusicDataBusiness from "../business/GetMusicDataBusiness";
 import Authorizer from "../services/Authorizer";
 import IdGenerator from "../services/IdGenerator";
 import InvalidInput from "../error/InvalidInput";
@@ -77,6 +78,43 @@ export default class MusicController {
             const result = await searchMusicBusiness.execute(text, page);
 
             res.status(200).send({ result });
+
+        } catch(err) {
+            res.status(err.customErrorCode || 400).send({
+                message: err.message
+            })
+        } finally {
+            BaseDB.destroyConnection();
+        }
+    }
+
+    public getDataById = async (req: Request, res: Response) => {
+        try {
+            const getMusicDataBusiness = new GetMusicDataBusiness(new MusicDB());
+
+            const authorizer = new Authorizer();
+    
+            const token = req.headers.authorization;
+            
+            if (!token) {
+                throw new UnauthorizedError("Only listeners can search for musics by text");
+            }
+
+            const userRole = authorizer.retrieveDataFromToken(token).userRole;
+
+            if (userRole !== UserRole.FREE_LISTENER && userRole !== UserRole.PREMIUM_LISTENER) {
+                throw new UnauthorizedError("Only listeners can search for musics by text");
+            }
+
+            const id = req.query.id as string;
+
+            if(!id){
+                throw new InvalidInput("Missing input data")
+            }
+
+            const data = await getMusicDataBusiness.execute(id);
+
+            res.status(200).send({ data });
 
         } catch(err) {
             res.status(err.customErrorCode || 400).send({
