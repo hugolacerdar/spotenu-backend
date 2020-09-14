@@ -13,10 +13,17 @@ export default class PlaylistDB extends BaseDB {
         `);
     }
 
-
     public async addMusic(id_playlist: string, id_music: string): Promise<void> {
         await this.getConnection().raw(`
             INSERT ${this.tableNames.playlistMusic}() VALUES("${id_playlist}", "${id_music}");
+        `);
+    };
+
+    public async removeMusic(id_playlist: string, id_music: string): Promise<void> {
+        await this.getConnection().raw(`
+            DELETE FROM ${this.tableNames.playlistMusic}
+            WHERE id_playlist = "${id_playlist}"
+            AND id_music = "${id_music}";
         `);
     };
 
