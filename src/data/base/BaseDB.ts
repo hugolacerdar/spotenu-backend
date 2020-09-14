@@ -8,7 +8,9 @@ export default abstract class BaseDB {
         musicGenres: "sptn_music_genre",
         musicAlbum: "sptn_music_album",
         albumGenre: "sptn_album_genre",
-        musics: "sptn_music"
+        musics: "sptn_music",
+        playlists: "sptn_playlist",
+        playlistMusic: "sptn_playlist_music"
     }
 
     private validateSetupData() {
