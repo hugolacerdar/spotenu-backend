@@ -10,7 +10,8 @@ export default abstract class BaseDB {
         albumGenre: "sptn_album_genre",
         musics: "sptn_music",
         playlists: "sptn_playlist",
-        playlistMusic: "sptn_playlist_music"
+        playlistMusic: "sptn_playlist_music",
+        playlistUser: "sptn_playlist_user"
     }
 
     private validateSetupData() {

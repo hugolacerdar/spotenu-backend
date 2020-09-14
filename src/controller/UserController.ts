@@ -12,7 +12,9 @@ import UnauthorizedError from "../error/UnauthorizedError";
 import SigninBusiness from "../business/SigninBusiness";
 import GetBandsBusiness from "../business/GetBandsBusiness";
 import ApproveBandBusiness from "../business/ApproveBandBusiness";
+import FollowPlaylistBusiness from "../business/FollowPlaylistBusiness";
 import InvalidInput from "../error/InvalidInput";
+import PlaylistDB from "../data/PlaylistDB";
 
 export default class UserController {
     public signup = async (req: Request, res: Response) => {
@@ -193,6 +195,42 @@ export default class UserController {
             }
 
             await upgradeListenerBusiness.execute(id);
+
+            res.status(200).send({ message: "OK" });
+        } catch(err) {
+            res.status(err.customErrorCode || 400).send({ 
+                message: err.message
+            })
+        } finally {
+            BaseDB.destroyConnection();
+        }
+    }
+
+    public followPlaylist = async(req: Request, res: Response) => {
+        try {
+            const followPlaylistBusiness = new FollowPlaylistBusiness(new UserDB(), new PlaylistDB());
+            const authorizer = new Authorizer();
+
+            const token = req.headers.authorization;
+            const playlistId = req.body.playlistId;
+
+            if(!token){
+                throw new UnauthorizedError("Missing token: only listeners can perform this request");
+            }
+
+            const tokenData = authorizer.retrieveDataFromToken(token)
+
+            if(tokenData.userRole !== UserRole.FREE_LISTENER && tokenData.userRole !== UserRole.PREMIUM_LISTENER){
+                throw new UnauthorizedError("Invalid user role: only listeners can perform this request");
+            }
+
+            if(!playlistId){
+                throw new InvalidInput("Missing playlistId");
+            }
+
+            const userId = tokenData.userId;
+
+            await followPlaylistBusiness.execute(playlistId, userId);
 
             res.status(200).send({ message: "OK" });
         } catch(err) {

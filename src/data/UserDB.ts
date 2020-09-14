@@ -134,4 +134,27 @@ export default class UserDB extends BaseDB {
         WHERE id_user = "${id}";
         `);
     }
+
+    public async followPlaylist(playlistId: string, userId: string): Promise<void> {
+
+        await this.getConnection().raw(`
+            INSERT ${this.tableNames.playlistUser}() 
+            VALUES("${playlistId}", "${userId}");
+        `)
+    }
+
+    public async isAlreadyFollowing(playlistId: string, userId: string): Promise<boolean> {
+        const count = await this.getConnection().raw(`
+            SELECT COUNT(*) AS value
+            FROM ${this.tableNames.playlistUser}
+            WHERE id_playlist = "${playlistId}"
+            AND id_follower = "${userId}";
+        `);
+
+        if (count[0][0].value === 0) {
+            return false;
+        }
+
+        return true;
+    }
 }
