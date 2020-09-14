@@ -34,4 +34,19 @@ export default class PlaylistDB extends BaseDB {
         
         return true;
     }
+
+    public async isMusicAlreadyIn(id_music: string, id_playlist: string): Promise<boolean> {
+        const count = await this.getConnection().raw(`
+            SELECT COUNT(*) AS value
+            FROM ${this.tableNames.playlistMusic}
+            WHERE id_playlist = "${id_playlist}"
+            AND id_music = "${id_music}";
+        `);
+        
+        if(count[0][0].value === 0){
+            return false;
+        }
+        
+        return true;
+    }
 }
