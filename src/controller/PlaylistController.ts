@@ -4,12 +4,15 @@ import UserDB from "../data/UserDB";
 import CreatePlaylistBusiness from "../business/CreatePlaylistBusiness";
 import AddMusicToPlaylistBusiness from "../business/AddMusicToPlaylistBusiness";
 import RemoveMusicFromPlaylistBusiness from "../business/RemoveMusicFromPlaylistBusiness";
+import GetUserPlaylistsBusiness from "../business/GetUserPlaylistsBusiness";
+import TurnPlaylistPublicBusiness from "../business/TurnPlaylistPublicBusiness";
 import Authorizer from "../services/Authorizer";
 import IdGenerator from "../services/IdGenerator";
-import InvalidInput from "../error/InvalidInput";
+import InvalidInputError from "../error/InvalidInput";
 import UnauthorizedError from "../error/UnauthorizedError";
 import BaseDB from "../data/base/BaseDB";
 import { UserRole } from "../model/User";
+import { Permission } from "../model/Playlist";
 
 export default class PlaylistController {
     public createPlaylist = async (req: Request, res: Response) => {
@@ -28,7 +31,7 @@ export default class PlaylistController {
             const name = req.body.name;
 
             if(!name){
-                throw new InvalidInput("Missing input data")
+                throw new InvalidInputError("Missing input data")
             }
 
 
@@ -61,11 +64,9 @@ export default class PlaylistController {
             const playlistId = req.body.playlistId;
             const musicId = req.body.musicId;
 
-            if(!playlistId || !musicId){
-                throw new InvalidInput("Missing input data")
-            }
+            const playlist = await addMusicToPlaylistBusiness.playlistDB.getById(playlistId);
 
-            if(!(await addMusicToPlaylistBusiness.playlistDB.isUserCreator(userId, playlistId))){
+            if(userId !== playlist.getCreatorId()){
                 throw new UnauthorizedError("Unauthorized: premium members can only add musics to their own playlists")
             }
 
@@ -82,7 +83,7 @@ export default class PlaylistController {
         }
     }
 
-    public removeMusic= async (req: Request, res: Response) => {
+    public removeMusic = async (req: Request, res: Response) => {
         try {
             const removeMusicFromPlaylistBusiness = new RemoveMusicFromPlaylistBusiness(new PlaylistDB());
             const authorizer = new Authorizer();
@@ -99,14 +100,96 @@ export default class PlaylistController {
             const musicId = req.body.musicId;
 
             if(!playlistId || !musicId){
-                throw new InvalidInput("Missing input data")
+                throw new InvalidInputError("Missing input data")
             }
 
-            if(!(await removeMusicFromPlaylistBusiness.playlistDB.isUserCreator(userId, playlistId))){
+            const playlist = await removeMusicFromPlaylistBusiness.playlistDB.getById(playlistId);
+
+            if(userId !== playlist.getCreatorId()){
                 throw new UnauthorizedError("Unauthorized: premium members can only remove music from their own playlists")
             }
 
             await removeMusicFromPlaylistBusiness.execute(playlistId, musicId);
+
+            res.status(200).send({ message: "OK" });
+
+        } catch(err) {
+            res.status(err.customErrorCode || 400).send({
+                message: err.message
+            })
+        } finally {
+            BaseDB.destroyConnection();
+        }
+    }
+
+    public getUserPlaylists = async (req: Request, res: Response) => {
+        try {
+            const getUserPlaylistsBusiness = new GetUserPlaylistsBusiness(new PlaylistDB());
+            const authorizer = new Authorizer();
+    
+            const token = req.headers.authorization;
+            
+            if (!token || authorizer.retrieveDataFromToken(token).userRole !== UserRole.PREMIUM_LISTENER) {
+                throw new UnauthorizedError("Unauthorized: only premium listeners can perform this request");
+            }
+
+            const userId = authorizer.retrieveDataFromToken(token).userId;
+            const page = Number(req.query.page);
+
+            if(!page){
+                throw new InvalidInputError("Missing input data")
+            }
+
+            if(page < 1){
+                throw new InvalidInputError("Invalid input: page number must be at least 1")
+            }
+
+            const result = await getUserPlaylistsBusiness.execute(userId, page);
+
+            res.status(200).send({ result });
+
+        } catch(err) {
+            res.status(err.customErrorCode || 400).send({
+                message: err.message
+            })
+        } finally {
+            BaseDB.destroyConnection();
+        }
+    }
+
+    public turnPlaylistPublic = async (req: Request, res: Response) => {
+        try {
+            const turnPlaylistPublicBusiness = new TurnPlaylistPublicBusiness(new PlaylistDB());
+            const authorizer = new Authorizer();
+    
+            const token = req.headers.authorization;
+            
+            if (!token || authorizer.retrieveDataFromToken(token).userRole !== UserRole.PREMIUM_LISTENER) {
+                throw new UnauthorizedError("Unauthorized: only premium listeners can perform this request");
+            }
+
+            const userId = authorizer.retrieveDataFromToken(token).userId;
+            const playlistId = req.body.playlistId;
+
+            if(!playlistId){
+                throw new InvalidInputError("Missing input data")
+            }
+
+            const playlist = await turnPlaylistPublicBusiness.playlistDB.getById(playlistId);
+
+            if(!playlist){
+                throw new InvalidInputError("Invalid input: no playlist matching the input id")
+            }
+
+            if(userId !== playlist.getCreatorId()){
+                throw new UnauthorizedError("Unauthorized: premium members can only turn their own playlists into public")
+            }
+
+            if(playlist.getPermission() === Permission.PUBLIC){
+                throw new InvalidInputError("Playlist is already public")
+            }
+
+            await turnPlaylistPublicBusiness.execute(playlistId);
 
             res.status(200).send({ message: "OK" });
 
