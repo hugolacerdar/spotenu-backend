@@ -66,6 +66,21 @@ export default class PlaylistDB extends BaseDB {
         return true;
     }
 
+    public async isUserFollowing(userId: string, playlistId: string): Promise<boolean> {
+        const count = await this.getConnection().raw(`
+            SELECT COUNT(*) AS value
+            FROM ${this.tableNames.playlistUser}
+            WHERE id_playlist = "${playlistId}"
+            AND id_follower = "${userId}";
+        `);
+
+        if (count[0][0].value === 0) {
+            return false;
+        }
+
+        return true;
+    }
+
     public async getPlaylistsByUserId(id_user: string, page: number): Promise<any> {
 
         const offset: number = 10 * (page - 1);

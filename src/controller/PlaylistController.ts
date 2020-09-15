@@ -64,10 +64,15 @@ export default class PlaylistController {
             const playlistId = req.body.playlistId;
             const musicId = req.body.musicId;
 
+            if(!playlistId || !musicId){
+                throw new InvalidInputError("Missing input data")
+            }
             const playlist = await addMusicToPlaylistBusiness.playlistDB.getById(playlistId);
+            const isUserFollowing = await addMusicToPlaylistBusiness.playlistDB.isUserFollowing(userId, playlistId);
 
-            if(userId !== playlist.getCreatorId()){
-                throw new UnauthorizedError("Unauthorized: premium members can only add musics to their own playlists")
+
+            if(userId !== playlist.getCreatorId() && !isUserFollowing){
+                throw new UnauthorizedError("Unauthorized: premium members can only add musics to their own playlists or playlists they follow")
             }
 
             await addMusicToPlaylistBusiness.execute(playlistId, musicId);
@@ -104,9 +109,11 @@ export default class PlaylistController {
             }
 
             const playlist = await removeMusicFromPlaylistBusiness.playlistDB.getById(playlistId);
+            const isUserFollowing = await removeMusicFromPlaylistBusiness.playlistDB.isUserFollowing(userId, playlistId);
 
-            if(userId !== playlist.getCreatorId()){
-                throw new UnauthorizedError("Unauthorized: premium members can only remove music from their own playlists")
+
+            if(userId !== playlist.getCreatorId() && !isUserFollowing){
+                throw new UnauthorizedError("Unauthorized: premium members can only remove musics from their own playlists or playlists they follow")
             }
 
             await removeMusicFromPlaylistBusiness.execute(playlistId, musicId);
