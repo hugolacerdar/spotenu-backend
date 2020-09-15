@@ -66,16 +66,19 @@ export default class PlaylistDB extends BaseDB {
         return true;
     }
 
-    public async getUserPlaylists(id_user: string, page: number): Promise<any> {
+    public async getPlaylistsByUserId(id_user: string, page: number): Promise<any> {
 
         const offset: number = 10 * (page - 1);
 
         const playlists = await this.getConnection().raw(`
-            SELECT id_playlist AS id, name
-            FROM ${this.tableNames.playlists}
+            SELECT DISTINCTROW name, p.id_playlist AS id
+            FROM ${this.tableNames.playlists} AS p
+            INNER JOIN ${this.tableNames.playlistUser} AS pu
+            ON id_creator = id_follower OR p.id_playlist = pu.id_playlist
             WHERE id_creator = "${id_user}"
+            OR id_follower = "${id_user}"
             LIMIT 10
-            OFFSET ${offset};
+            OFFSET ${offset}; 
         `);
 
         const result = playlists[0];

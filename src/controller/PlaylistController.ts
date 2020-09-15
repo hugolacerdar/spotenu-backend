@@ -4,7 +4,7 @@ import UserDB from "../data/UserDB";
 import CreatePlaylistBusiness from "../business/CreatePlaylistBusiness";
 import AddMusicToPlaylistBusiness from "../business/AddMusicToPlaylistBusiness";
 import RemoveMusicFromPlaylistBusiness from "../business/RemoveMusicFromPlaylistBusiness";
-import GetUserPlaylistsBusiness from "../business/GetUserPlaylistsBusiness";
+import GetPlaylistsByUserIdBusiness from "../business/GetPlaylistsByUserIdBusiness";
 import TurnPlaylistPublicBusiness from "../business/TurnPlaylistPublicBusiness";
 import Authorizer from "../services/Authorizer";
 import IdGenerator from "../services/IdGenerator";
@@ -122,9 +122,9 @@ export default class PlaylistController {
         }
     }
 
-    public getUserPlaylists = async (req: Request, res: Response) => {
+    public getPlaylistsByUserId = async (req: Request, res: Response) => {
         try {
-            const getUserPlaylistsBusiness = new GetUserPlaylistsBusiness(new PlaylistDB());
+            const getPlaylistsByUserIdBusiness = new GetPlaylistsByUserIdBusiness(new PlaylistDB());
             const authorizer = new Authorizer();
     
             const token = req.headers.authorization;
@@ -144,7 +144,7 @@ export default class PlaylistController {
                 throw new InvalidInputError("Invalid input: page number must be at least 1")
             }
 
-            const result = await getUserPlaylistsBusiness.execute(userId, page);
+            const result = await getPlaylistsByUserIdBusiness.execute(userId, page);
 
             res.status(200).send({ result });
 
