@@ -100,5 +100,18 @@ export default class MusicDB extends BaseDB {
         `)
     }
 
+    public async delete(musicId: string): Promise<void> {
+        await this.getConnection().raw(`
+            DELETE FROM ${this.tableNames.playlistMusic}
+            WHERE id_music = "${musicId}";
+        `)
+
+        await this.getConnection().raw(`            
+            DELETE FROM ${this.tableNames.musics}
+            WHERE id_music = "${musicId}";
+
+        `)
+    }
+
     
 }

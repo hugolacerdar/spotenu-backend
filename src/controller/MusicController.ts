@@ -5,6 +5,7 @@ import CreateMusicBusiness from "../business/CreateMusicBusiness";
 import SearchMusicBusiness from "../business/SearchMusicBusiness";
 import GetMusicDataBusiness from "../business/GetMusicDataBusiness";
 import EditMusicNameBusiness from "../business/EditMusicNameBusiness";
+import DeleteMusicBusiness from "../business/DeleteMusicBusiness";
 import ChangeAlbumBusiness from "../business/ChangeAlbumBusiness";
 import Authorizer from "../services/Authorizer";
 import IdGenerator from "../services/IdGenerator";
@@ -226,6 +227,54 @@ export default class MusicController {
             }
             
             await changeAlbumBusiness.execute(musicId, albumId);
+
+            res.status(200).send({ message: "OK" });
+
+        } catch(err) {
+            res.status(err.customErrorCode || 400).send({
+                message: err.message
+            })
+        } finally {
+            BaseDB.destroyConnection();
+        }
+    }
+
+    public deleteMusic = async (req: Request, res: Response) => {
+        try {
+            const deleteMusicBusiness = new DeleteMusicBusiness(new MusicDB());
+
+            const authorizer = new Authorizer();
+    
+            const token = req.headers.authorization;
+            
+            if (!token) {
+                throw new UnauthorizedError("Unauthorized: only bands perform this request");
+            }
+
+            const tokenData = authorizer.retrieveDataFromToken(token);
+
+            if (tokenData.userRole !== UserRole.BAND) {
+                throw new UnauthorizedError("Unauthorized: only bands perform this request");
+            }
+            
+            const musicId = req.body.musicId;
+            
+            if(!musicId){
+                throw new InvalidInput("Missing input data")
+            }
+
+            const musicData = await deleteMusicBusiness.musicDB.getMusicDataById(musicId);
+
+            if(!musicData){
+                throw new NotFoundError("Invalid music id");
+            }
+
+            if(musicData.bandId !== tokenData.userId){
+                throw new UnauthorizedError("Unauthorized: only the band associated with the music can delete it")
+            }            
+
+            
+            await deleteMusicBusiness.execute(musicId);
 
             res.status(200).send({ message: "OK" });
 

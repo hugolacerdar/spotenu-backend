@@ -8,5 +8,6 @@ musicRouter.get("/search", new MusicController().getByText);
 musicRouter.get("/data", new MusicController().getDataById);
 musicRouter.put("/edit", new MusicController().editName);
 musicRouter.put("/change_album", new MusicController().changeAlbum);
+musicRouter.delete("/delete", new MusicController().deleteMusic);
 
 export default musicRouter;
