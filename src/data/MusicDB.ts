@@ -31,7 +31,7 @@ export default class MusicDB extends BaseDB {
         return result;
     }
 
-    public async getMusicDataById(id_music: string): Promise<any> {
+    public async getMusicDataById(id_music: string): Promise<any | undefined> {
         const dataRaw = await this.getConnection().raw(`
         SELECT
             id_music AS idMusic, 
@@ -54,9 +54,12 @@ export default class MusicDB extends BaseDB {
         WHERE id_music = "${id_music}";
         `);
 
-        console.log("dataRaw", dataRaw[0]);
+        if(!dataRaw) {
+            return undefined;
+        };
+
         const data = dataRaw[0]; 
-        console.log("data", data)
+    
         const genresId = data.map((item: any) => {
             return item.idGenre;
         });
@@ -78,4 +81,24 @@ export default class MusicDB extends BaseDB {
 
         return result;
     }
+
+    public async editName(musicId: string, newName: string): Promise<void> {
+        
+        await this.getConnection().raw(`
+            UPDATE ${this.tableNames.musics}
+            SET name = "${newName}"
+            WHERE id_music = "${musicId}";
+        `)
+    }
+
+    public async changeAlbum(musicId: string, albumId: string): Promise<void> {
+        
+        await this.getConnection().raw(`
+            UPDATE ${this.tableNames.musics}
+            SET id_album = "${albumId}"
+            WHERE id_music = "${musicId}";
+        `)
+    }
+
+    
 }

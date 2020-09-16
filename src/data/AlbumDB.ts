@@ -14,6 +14,23 @@ export default class AlbumDB extends BaseDB {
         }
     }
 
+    public async getById(albumId: string): Promise<any | undefined>{
+
+        const rawData = await this.getConnection().raw(`
+            SELECT id_album AS albumId, name, id_band AS bandId
+            FROM ${this.tableNames.musicAlbum}
+            WHERE id_album = "${albumId}";
+        `)
+
+        if(!rawData[0][0]) {
+            return undefined;
+        }
+
+        const result = rawData[0][0];
+
+        return result;
+    }
+
     public async isBandAllowed(id_band: string, id_album: string): Promise<boolean> {
         const count = await this.getConnection().raw(`
             SELECT COUNT(*) AS value

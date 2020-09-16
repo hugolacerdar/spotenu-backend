@@ -1,6 +1,6 @@
 import PlaylistDB from "../data/PlaylistDB";
 
-export default class EditNameBusiness {
+export default class EditPlaylistNameBusiness {
     constructor(public playlistDB: PlaylistDB){}
 
     public async execute(playlistId: string, newName: string){
