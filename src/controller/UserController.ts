@@ -12,6 +12,7 @@ import UnauthorizedError from "../error/UnauthorizedError";
 import SigninBusiness from "../business/SigninBusiness";
 import GetBandsBusiness from "../business/GetBandsBusiness";
 import ApproveBandBusiness from "../business/ApproveBandBusiness";
+import EditNameBusiness from "../business/EditUserNameBusiness";
 import FollowPlaylistBusiness from "../business/FollowPlaylistBusiness";
 import InvalidInput from "../error/InvalidInput";
 import PlaylistDB from "../data/PlaylistDB";
@@ -231,6 +232,38 @@ export default class UserController {
             const userId = tokenData.userId;
 
             await followPlaylistBusiness.execute(playlistId, userId);
+
+            res.status(200).send({ message: "OK" });
+        } catch(err) {
+            res.status(err.customErrorCode || 400).send({ 
+                message: err.message
+            })
+        } finally {
+            BaseDB.destroyConnection();
+        }
+    }
+
+    public editName = async(req: Request, res: Response) => {
+        try {
+            const editNameBusiness = new EditNameBusiness(new UserDB());
+            const authorizer = new Authorizer();
+
+            const token = req.headers.authorization;
+            const newName = req.body.newName;
+
+            if(!token){
+                throw new UnauthorizedError("Missing token: only listeners can perform this request");
+            }
+
+            const tokenData = authorizer.retrieveDataFromToken(token)
+
+            if(!newName){
+                throw new InvalidInput("Missing new name value");
+            }
+
+            const userId = tokenData.userId;
+
+            await editNameBusiness.execute(userId, newName);
 
             res.status(200).send({ message: "OK" });
         } catch(err) {

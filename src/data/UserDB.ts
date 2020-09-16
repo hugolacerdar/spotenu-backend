@@ -157,4 +157,12 @@ export default class UserDB extends BaseDB {
 
         return true;
     }
+
+    public async editName(userId: string, newName: string): Promise<void> {
+        await this.getConnection().raw(`
+            UPDATE ${this.tableNames.users}
+            SET name = "${newName}"
+            WHERE id_user = "${userId}";
+        `)
+    }
 }

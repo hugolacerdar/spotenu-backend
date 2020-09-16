@@ -9,5 +9,6 @@ userRouter.get("/bands", new UserController().getBands);
 userRouter.put("/approve_band", new UserController().approveBand);
 userRouter.put("/upgrade_listener", new UserController().upgradeListener);
 userRouter.post("/follow_playlist", new UserController().followPlaylist);
+userRouter.put("/edit", new UserController().editName);
 
 export default userRouter;
