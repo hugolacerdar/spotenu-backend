@@ -8,5 +8,6 @@ playlistRouter.put("/add_music", new PlaylistController().addMusic);
 playlistRouter.delete("/remove_music", new PlaylistController().removeMusic);
 playlistRouter.get("/list", new PlaylistController().getPlaylistsByUserId);
 playlistRouter.put("/change_permission", new PlaylistController().turnPlaylistPublic);
+playlistRouter.put("/edit", new PlaylistController().editName);
 
 export default playlistRouter;

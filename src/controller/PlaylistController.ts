@@ -6,6 +6,7 @@ import AddMusicToPlaylistBusiness from "../business/AddMusicToPlaylistBusiness";
 import RemoveMusicFromPlaylistBusiness from "../business/RemoveMusicFromPlaylistBusiness";
 import GetPlaylistsByUserIdBusiness from "../business/GetPlaylistsByUserIdBusiness";
 import TurnPlaylistPublicBusiness from "../business/TurnPlaylistPublicBusiness";
+import EditPlaylistNameBusiness from "../business/EditPlaylistNameBusiness";
 import Authorizer from "../services/Authorizer";
 import IdGenerator from "../services/IdGenerator";
 import InvalidInputError from "../error/InvalidInput";
@@ -202,6 +203,52 @@ export default class PlaylistController {
 
         } catch(err) {
             res.status(err.customErrorCode || 400).send({
+                message: err.message
+            })
+        } finally {
+            BaseDB.destroyConnection();
+        }
+    }
+
+    public editName = async(req: Request, res: Response) => {
+        try {
+            const editPlaylistNameBusiness = new EditPlaylistNameBusiness(new PlaylistDB());
+            const authorizer = new Authorizer();
+
+            const token = req.headers.authorization;
+            const newName = req.body.newName;
+            const playlistId = req.body.playlistId;
+
+            if(!token){
+                throw new UnauthorizedError("Missing token: only premium listeners can perform this request");
+            }
+
+            const tokenData = authorizer.retrieveDataFromToken(token)
+
+
+            if (tokenData.userRole !== UserRole.PREMIUM_LISTENER) {
+                throw new UnauthorizedError("Unauthorized: only premium listeners can perform this request");
+            };
+            
+            const userId = tokenData.userId;
+            
+            const playlist = await editPlaylistNameBusiness.playlistDB.getById(playlistId);
+            const isUserFollowing = await editPlaylistNameBusiness.playlistDB.isUserFollowing(userId, playlistId);
+            
+            
+            if(userId !== playlist.getCreatorId() && !isUserFollowing){
+                throw new UnauthorizedError("Unauthorized: premium members can only edit the name from their own playlists or playlists they follow")
+            }
+            
+            if(!newName || !playlistId){
+                throw new InvalidInputError("Missing input data");
+            }
+
+            await editPlaylistNameBusiness.execute(playlistId, newName);
+
+            res.status(200).send({ message: "OK" });
+        } catch(err) {
+            res.status(err.customErrorCode || 400).send({ 
                 message: err.message
             })
         } finally {

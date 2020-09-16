@@ -109,4 +109,13 @@ export default class PlaylistDB extends BaseDB {
             WHERE id_playlist = "${playlistId}";
         `);
     }
+
+    public async editName(playlistId: string, newName: string): Promise<void> {
+        await this.getConnection().raw(`
+            UPDATE ${this.tableNames.playlists}
+            SET name = "${newName}"
+            WHERE id_playlist = "${playlistId}";
+        `)
+    }
+
 }
