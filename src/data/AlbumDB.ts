@@ -31,18 +31,28 @@ export default class AlbumDB extends BaseDB {
         return result;
     }
 
-    public async isBandAllowed(id_band: string, id_album: string): Promise<boolean> {
-        const count = await this.getConnection().raw(`
-            SELECT COUNT(*) AS value
-            FROM ${this.tableNames.musicAlbum}
-            WHERE id_band = "${id_band}"
-            AND id_album = "${id_album}";
+    public async delete(albumId: string): Promise<void> {
+        await this.getConnection().raw(`
+            DELETE FROM ${this.tableNames.playlistMusic}
+            WHERE id_music IN (SELECT id_music 
+                                FROM sptn_music
+                                WHERE id_album = "${albumId}");
         `);
-        
-        if(count[0][0].value === 0){
-            return false;
+
+        await this.getConnection().raw(`
+            DELETE FROM ${this.tableNames.musics}
+            WHERE id_album = "${albumId}";
+        `);
+
+        await this.getConnection().raw(`
+            DELETE FROM ${this.tableNames.albumGenre}
+            WHERE id_album = "${albumId}";
+        `);
+
+        await this.getConnection().raw(`
+            DELETE FROM ${this.tableNames.musicAlbum}
+            WHERE id_album = "${albumId}";
+        `);
+
         }
-        
-        return true;
     }
-}

@@ -37,7 +37,13 @@ export default class MusicController {
                 throw new InvalidInput("Missing input data")
             }
 
-            if(!(await albumDB.isBandAllowed(bandId, albumId))){
+            const albumData = await new AlbumDB().getById(albumId);
+
+            if(!albumData){
+                throw new NotFoundError("Album not found");
+            }
+
+            if(bandId !== albumData.albumId){
                 throw new UnauthorizedError("Bands can only add music to their own albums")
             }
 
