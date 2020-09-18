@@ -31,5 +31,6 @@ export interface SignupBusinessInput {
     password: string,
     role: UserRole,
     isApproved: boolean,
+    isBlocked: boolean,
     description?: string
 }

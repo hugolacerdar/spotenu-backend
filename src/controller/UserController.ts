@@ -14,6 +14,7 @@ import GetBandsBusiness from "../business/GetBandsBusiness";
 import ApproveBandBusiness from "../business/ApproveBandBusiness";
 import EditNameBusiness from "../business/EditUserNameBusiness";
 import FollowPlaylistBusiness from "../business/FollowPlaylistBusiness";
+import BlockUserBusiness from "../business/BlockUserBusiness";
 import InvalidInput from "../error/InvalidInput";
 import PlaylistDB from "../data/PlaylistDB";
 
@@ -32,7 +33,8 @@ export default class UserController {
                 username: req.body.username,
                 role: req.body.role,
                 password: req.body.password,
-                isApproved: true
+                isApproved: true,
+                isBlocked: false
             }
 
             if (!input.name || !input.email || !input.username || !input.role || !input.password) {
@@ -99,10 +101,6 @@ export default class UserController {
             }
 
             const user = await signinBusiness.execute(input);
-
-            if(!user.getApprovalStatus()){
-                throw new UnauthorizedError("Unapproved band")
-            }
             
             const authorizer = new Authorizer();
             const token = authorizer.generateToken({
@@ -274,4 +272,37 @@ export default class UserController {
             BaseDB.destroyConnection();
         }
     }
+
+    public blockUser = async(req: Request, res: Response) => {
+        try {
+            const blockUserBusiness = new BlockUserBusiness(new UserDB());
+            const authorizer = new Authorizer();
+
+            const token = req.headers.authorization;
+            const userId = req.body.userId;
+
+            if(!token){
+                throw new UnauthorizedError("Missing token: only admins can perform this request");
+            }
+
+            if(authorizer.retrieveDataFromToken(token).userRole !== UserRole.ADMIN){
+                throw new UnauthorizedError("Invalid role: only admins can perform this request");
+            }
+
+            if(!userId){
+                throw new InvalidInput("Missing id");
+            }
+
+            await blockUserBusiness.execute(userId);
+
+            res.status(200).send({ message: "OK" });
+        } catch(err) {
+            res.status(err.customErrorCode || 400).send({ 
+                message: err.message
+            })
+        } finally {
+            BaseDB.destroyConnection();
+        }
+    }
+
 }

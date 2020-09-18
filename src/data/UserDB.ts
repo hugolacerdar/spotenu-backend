@@ -4,7 +4,7 @@ import User, { UserRole } from "../model/User";
 export default class UserDB extends BaseDB {
     public async getUserByEmailOrUsername(credential: string): Promise<User | undefined> {
         const user = await this.getConnection().raw(`
-            SELECT id_user AS id, name, email, username, role, password, is_approved as isApproved, description 
+            SELECT id_user AS id, name, email, username, role, password, is_approved AS isApproved, is_blocked AS isBlocked, description 
             FROM sptn_user
             LEFT JOIN sptn_band_desc
             ON id_user = id_band
@@ -22,6 +22,7 @@ export default class UserDB extends BaseDB {
                 input.role,
                 input.password,
                 Boolean(input.isApproved),
+                Boolean(input.isBlocked),
                 input.description);
         }
 
@@ -31,12 +32,14 @@ export default class UserDB extends BaseDB {
             input.username,
             input.role,
             input.password,
-            Boolean(input.isApproved));
+            Boolean(input.isApproved),
+            Boolean(input.isBlocked)
+            );
     }
 
     public async getUserById(id: string): Promise<User | undefined> {
         const user = await this.getConnection().raw(`
-            SELECT id_user, name, email, username, role, password, is_approved AS isApproved, description 
+            SELECT id_user, name, email, username, role, password, is_approved AS isApproved, is_blocked AS isBlocked, description 
             FROM sptn_user
             LEFT JOIN sptn_band_desc
             ON id_user = id_band
@@ -44,6 +47,10 @@ export default class UserDB extends BaseDB {
         `)
 
         const input = user[0][0];
+
+        if(!input) {
+            return undefined;
+        }
 
         if (input.role === "BAND") {
             return new User(
@@ -54,6 +61,7 @@ export default class UserDB extends BaseDB {
                 input.role,
                 input.password,
                 Boolean(input.isApproved),
+                Boolean(input.isBlocked),
                 input.description
             );
         }
@@ -65,7 +73,8 @@ export default class UserDB extends BaseDB {
             input.username,
             input.role,
             input.password,
-            Boolean(input.isApproved)
+            Boolean(input.isApproved),
+            Boolean(input.isBlocked)
         );
     }
 
@@ -79,7 +88,8 @@ export default class UserDB extends BaseDB {
                 username: user.getUsername(),
                 role: user.getRole(),
                 password: user.getPassword(),
-                isApproved: false
+                isApproved: false,
+                isBlocked: false
             }
 
             const descToInsert = {
@@ -88,12 +98,12 @@ export default class UserDB extends BaseDB {
             }
 
             await this.getConnection().raw(`
-                INSERT ${this.tableNames.users}() VALUES("${userToInsert.id}", "${userToInsert.name}", "${userToInsert.email}", "${userToInsert.username}", "${userToInsert.role}", "${userToInsert.password}", ${userToInsert.isApproved});
+                INSERT ${this.tableNames.users}() VALUES("${userToInsert.id}", "${userToInsert.name}", "${userToInsert.email}", "${userToInsert.username}", "${userToInsert.role}", "${userToInsert.password}", ${userToInsert.isApproved}, ${user.getBlockedStatus});
                 `);
             await this.getConnection().raw(`INSERT ${this.tableNames.description}() VALUES("${descToInsert.id}", "${descToInsert.description}")`);
         } else {
             await this.getConnection().raw(`
-                INSERT ${this.tableNames.users}() VALUES("${user.getId()}", "${user.getName()}", "${user.getEmail()}", "${user.getUsername()}", "${user.getRole()}", "${user.getPassword()}", ${user.getApprovalStatus()});
+                INSERT ${this.tableNames.users}() VALUES("${user.getId()}", "${user.getName()}", "${user.getEmail()}", "${user.getUsername()}", "${user.getRole()}", "${user.getPassword()}", ${user.getApprovalStatus()}, ${user.getBlockedStatus()});
             `)
         }
     }
@@ -101,7 +111,7 @@ export default class UserDB extends BaseDB {
     public async getAllBands(): Promise<any> {
 
         const bandsRaw = await this.getConnection().raw(`
-            SELECT name, email, username, is_approved AS isApproved
+            SELECT name, email, username, is_approved AS isApproved, is_blocked AS isBlocked
             FROM ${this.tableNames.users}
             WHERE role = "BAND";
         `);
@@ -111,8 +121,8 @@ export default class UserDB extends BaseDB {
                 name: band.name,
                 email: band.email,
                 username: band.username,
-                isApproved: Boolean(band.isApproved)
-
+                isApproved: Boolean(band.isApproved),
+                isBlocked: Boolean(band.isBlocked)
             };
         });
 
@@ -164,5 +174,13 @@ export default class UserDB extends BaseDB {
             SET name = "${newName}"
             WHERE id_user = "${userId}";
         `)
+    }
+
+    public async blockUser(id: string): Promise<void> {
+        await this.getConnection().raw(`
+            UPDATE ${this.tableNames.users} 
+            SET is_blocked = true
+            WHERE id_user = "${id}";
+        `);
     }
 }

@@ -10,6 +10,7 @@ export default class User {
         private role: UserRole,
         private password: string,
         private isApproved: boolean,
+        private isBlocked: boolean,
         private description?: string
     ){}
 
@@ -35,6 +36,10 @@ export default class User {
 
     public getApprovalStatus(): boolean {
         return this.isApproved;
+    }
+
+    public getBlockedStatus(): boolean {
+        return this.isBlocked;
     }
 
     public getPassword(): string {
@@ -67,7 +72,8 @@ export default class User {
                 data.email,
                 data.role,
                 data.password,
-                data.isApproved
+                data.isApproved,
+                data.isBlocked
                 ));
     }
 
