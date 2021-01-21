@@ -19,13 +19,14 @@ import InvalidInput from "../error/InvalidInput";
 import PlaylistDB from "../data/PlaylistDB";
 
 export default class UserController {
+    private static signupBusiness = new SignupBusiness(
+        new UserDB(),
+        new Cypher(),
+        new IdGenerator(),
+        new Authorizer()
+    );
     public signup = async (req: Request, res: Response) => {
         try {
-            const signupBusiness = new SignupBusiness(
-                new UserDB(),
-                new Cypher(),
-                new IdGenerator()
-            );
 
             let input: any = {
                 name: req.body.name,
@@ -36,44 +37,10 @@ export default class UserController {
                 isApproved: true,
                 isBlocked: false
             }
-
-            if (!input.name || !input.email || !input.username || !input.role || !input.password) {
-                throw new InvalidInputError("Missing data");
-            }
-
-            if (input.role === "BAND" && !req.body.description){
-                throw new InvalidInputError("Missing band description");
-            } else if(input.role === "BAND" && req.body.description){
-                input = {...input, isApproved: false, description: req.body.description};
-            }
-
-            if (input.role !== "ADMIN" && input.password.length < 6){
-                throw new InvalidInputError("The password is too short, the mandatory minimum length is 6")
-            }
-
-            if (input.role === "ADMIN" && input.password.length < 10){
-                throw new InvalidInputError("The password is too short, the mandatory admin minimum length is 10")
-            }
-           
-            const authorizer = new Authorizer();
-
-            if(input.role === UserRole.ADMIN && req.headers.authorization){
-                const tokenData = authorizer.retrieveDataFromToken(req.headers.authorization);
-                
-                if(tokenData.userRole !== UserRole.ADMIN){
-                    throw new UnauthorizedError("Admin level required to create another admin account");
-                }
-            }else if(input.role === UserRole.ADMIN && !req.headers.authorization){
-                throw new UnauthorizedError("Admin level required to create another admin account");
-            }
-
-            const user = await signupBusiness.execute(input);
-
-            if(user.getRole() !== UserRole.BAND){
-                const token = authorizer.generateToken({    
-                userId: user.getId(),
-                userRole: user.getRole()
-                });
+            
+            const token = await UserController.signupBusiness.execute(input, req.body.description, req.headers.authorization);
+            
+            if(token) {
                 res.status(200).send({ token });
             }
 

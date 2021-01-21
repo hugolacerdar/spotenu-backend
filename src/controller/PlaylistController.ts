@@ -68,15 +68,8 @@ export default class PlaylistController {
             if(!playlistId || !musicId){
                 throw new InvalidInputError("Missing input data")
             }
-            const playlist = await addMusicToPlaylistBusiness.playlistDB.getById(playlistId);
-            const isUserFollowing = await addMusicToPlaylistBusiness.playlistDB.isUserFollowing(userId, playlistId);
 
-
-            if(userId !== playlist.getCreatorId() && !isUserFollowing){
-                throw new UnauthorizedError("Unauthorized: premium members can only add musics to their own playlists or playlists they follow")
-            }
-
-            await addMusicToPlaylistBusiness.execute(playlistId, musicId);
+            await addMusicToPlaylistBusiness.execute(playlistId, musicId, userId);
 
             res.status(200).send({ message: "OK" });
 
@@ -109,15 +102,7 @@ export default class PlaylistController {
                 throw new InvalidInputError("Missing input data")
             }
 
-            const playlist = await removeMusicFromPlaylistBusiness.playlistDB.getById(playlistId);
-            const isUserFollowing = await removeMusicFromPlaylistBusiness.playlistDB.isUserFollowing(userId, playlistId);
-
-
-            if(userId !== playlist.getCreatorId() && !isUserFollowing){
-                throw new UnauthorizedError("Unauthorized: premium members can only remove musics from their own playlists or playlists they follow")
-            }
-
-            await removeMusicFromPlaylistBusiness.execute(playlistId, musicId);
+            await removeMusicFromPlaylistBusiness.execute(playlistId, musicId, userId);
 
             res.status(200).send({ message: "OK" });
 
@@ -183,21 +168,7 @@ export default class PlaylistController {
                 throw new InvalidInputError("Missing input data")
             }
 
-            const playlist = await turnPlaylistPublicBusiness.playlistDB.getById(playlistId);
-
-            if(!playlist){
-                throw new InvalidInputError("Invalid input: no playlist matching the input id")
-            }
-
-            if(userId !== playlist.getCreatorId()){
-                throw new UnauthorizedError("Unauthorized: premium members can only turn their own playlists into public")
-            }
-
-            if(playlist.getPermission() === Permission.PUBLIC){
-                throw new InvalidInputError("Playlist is already public")
-            }
-
-            await turnPlaylistPublicBusiness.execute(playlistId);
+            await turnPlaylistPublicBusiness.execute(playlistId, userId);
 
             res.status(200).send({ message: "OK" });
 
@@ -231,20 +202,12 @@ export default class PlaylistController {
             };
             
             const userId = tokenData.userId;
-            
-            const playlist = await editPlaylistNameBusiness.playlistDB.getById(playlistId);
-            const isUserFollowing = await editPlaylistNameBusiness.playlistDB.isUserFollowing(userId, playlistId);
-            
-            
-            if(userId !== playlist.getCreatorId() && !isUserFollowing){
-                throw new UnauthorizedError("Unauthorized: premium members can only edit the name from their own playlists or playlists they follow")
-            }
-            
+                        
             if(!newName || !playlistId){
                 throw new InvalidInputError("Missing input data");
             }
 
-            await editPlaylistNameBusiness.execute(playlistId, newName);
+            await editPlaylistNameBusiness.execute(playlistId, newName, userId);
 
             res.status(200).send({ message: "OK" });
         } catch(err) {

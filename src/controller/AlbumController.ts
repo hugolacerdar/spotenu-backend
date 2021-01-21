@@ -63,17 +63,8 @@ export default class AlbumController {
             }
 
             const bandId = authorizer.retrieveDataFromToken(token).userId;
-            const albumData = await deleteAlbumBusiness.albumDB.getById(albumId);
 
-            if(!albumData){
-                throw new NotFoundError("Album not found");
-            }
-
-            if(bandId !== albumData.bandId){
-                throw new UnauthorizedError("Unauthorized: bands can only delete their own albums");
-            }
-
-            await deleteAlbumBusiness.execute(albumId);
+            await deleteAlbumBusiness.execute(albumId, bandId);
 
             res.status(200).send({ message: "OK" });
 

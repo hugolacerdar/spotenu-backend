@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import MusicDB from "../data/MusicDB";
-import AlbumDB from "../data/AlbumDB";
 import CreateMusicBusiness from "../business/CreateMusicBusiness";
 import SearchMusicBusiness from "../business/SearchMusicBusiness";
 import GetMusicDataBusiness from "../business/GetMusicDataBusiness";
@@ -14,13 +13,13 @@ import UnauthorizedError from "../error/UnauthorizedError";
 import { UserRole } from "../model/User";
 import BaseDB from "../data/base/BaseDB";
 import NotFoundError from "../error/NotFoundError";
+import AlbumDB from "../data/AlbumDB";
 
 export default class MusicController {
     public createMusic= async (req: Request, res: Response) => {
         try {
-            const createMusicBusiness = new CreateMusicBusiness(new MusicDB(), new IdGenerator());
+            const createMusicBusiness = new CreateMusicBusiness(new MusicDB(), new IdGenerator(), new AlbumDB());
             const authorizer = new Authorizer();
-            const albumDB = new AlbumDB();
     
             const token = req.headers.authorization;
             
@@ -37,17 +36,7 @@ export default class MusicController {
                 throw new InvalidInput("Missing input data")
             }
 
-            const albumData = await new AlbumDB().getById(albumId);
-
-            if(!albumData){
-                throw new NotFoundError("Album not found");
-            }
-
-            if(bandId !== albumData.albumId){
-                throw new UnauthorizedError("Bands can only add music to their own albums")
-            }
-
-            await createMusicBusiness.execute(title, albumId);
+            await createMusicBusiness.execute(title, albumId, bandId);
 
             res.status(200).send({ message: "OK" });
 
@@ -159,18 +148,8 @@ export default class MusicController {
             if(!musicId || !newName){
                 throw new InvalidInput("Missing input data")
             }
-
-            const musicData = await editMusicNameBusiness.musicDB.getMusicDataById(musicId);
-
-            if(!musicData){
-                throw new NotFoundError("Invalid music id");
-            }
-
-            if(musicData.bandId !== tokenData.userId){
-                throw new UnauthorizedError("Unauthorized: only the band associated with the music can edit it's name")
-            }
             
-            await editMusicNameBusiness.execute(musicId, newName);
+            await editMusicNameBusiness.execute(musicId, newName, tokenData.userId);
 
             res.status(200).send({ message: "OK" });
 
@@ -208,31 +187,8 @@ export default class MusicController {
                 throw new InvalidInput("Missing input data")
             }
 
-            const musicData = await changeAlbumBusiness.musicDB.getMusicDataById(musicId);
-
-            if(!musicData){
-                throw new NotFoundError("Invalid music id");
-            }
-
-            if(musicData.bandId !== tokenData.userId){
-                throw new UnauthorizedError("Unauthorized: only the band associated with the music can edit it's name")
-            }            
-
-            if(musicData.albumId === albumId){
-                throw new InvalidInput("Invalid input: the music is currently on the informed album")
-            }
-
-            const albumData = await changeAlbumBusiness.AlbumDB.getById(albumId);
-
-            if(!albumData){
-                throw new NotFoundError("Invalid album id");
-            }
             
-            if(albumData.bandId !== tokenData.userId){
-                throw new UnauthorizedError("Unauthorized: can only insert musics into albums associated with the same band id")
-            }
-            
-            await changeAlbumBusiness.execute(musicId, albumId);
+            await changeAlbumBusiness.execute(musicId, albumId, tokenData.userId);
 
             res.status(200).send({ message: "OK" });
 
@@ -267,20 +223,9 @@ export default class MusicController {
             
             if(!musicId){
                 throw new InvalidInput("Missing input data")
-            }
-
-            const musicData = await deleteMusicBusiness.musicDB.getMusicDataById(musicId);
-
-            if(!musicData){
-                throw new NotFoundError("Invalid music id");
-            }
-
-            if(musicData.bandId !== tokenData.userId){
-                throw new UnauthorizedError("Unauthorized: only the band associated with the music can delete it")
-            }            
-
+            }       
             
-            await deleteMusicBusiness.execute(musicId);
+            await deleteMusicBusiness.execute(musicId, tokenData.userId);
 
             res.status(200).send({ message: "OK" });
 
