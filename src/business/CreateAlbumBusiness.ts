@@ -1,4 +1,5 @@
 import AlbumDB from "../data/AlbumDB";
+import { CreateAlbumDTO } from "../model/Album";
 import IdGenerator from "../services/IdGenerator";
 
 export default class CreateAlbumBusiness {
@@ -8,6 +9,6 @@ export default class CreateAlbumBusiness {
 
         const id = this.idGenerator.generate();
 
-        await this.albumDB.create(id, title, id_band, genresId);
+        await this.albumDB.create(new CreateAlbumDTO(id, title, id_band, genresId));
     }
 }

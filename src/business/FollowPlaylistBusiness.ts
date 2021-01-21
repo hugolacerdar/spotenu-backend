@@ -9,7 +9,7 @@ export default class FollowPlaylistBusiness {
     constructor(private userDB: UserDB, private playlistDB: PlaylistDB){}
 
     public async execute(playlistId: string, userId: string) {
-        const playlist = await this.playlistDB.getById(playlistId);
+        const playlist = await this.playlistDB.getById({playlistId});
 
         if(!playlist){
             throw new NotFoundError("Playlist not found")

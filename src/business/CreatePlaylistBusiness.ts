@@ -3,6 +3,7 @@ import UserDB from "../data/UserDB";
 import IdGenerator from "../services/IdGenerator";
 import UnauthorizedError from "../error/UnauthorizedError";
 import { UserRole } from "../model/User";
+import { CreateDTO } from "../model/Playlist";
 
 export default class CreatePlaylistBusiness {
     constructor(private playlistDB: PlaylistDB, private userDB: UserDB, private idGenerator: IdGenerator){}
@@ -19,6 +20,6 @@ export default class CreatePlaylistBusiness {
 
         const id = this.idGenerator.generate();
 
-        await this.playlistDB.create(id, name, id_creator);
+        await this.playlistDB.create(new CreateDTO(id, name, id_creator));
     }
 }
