@@ -61,6 +61,7 @@ export default class User {
                     data.role,
                     data.password,
                     data.isApproved,
+                    data.isBlocked,
                     data.description
                     ));
         }
