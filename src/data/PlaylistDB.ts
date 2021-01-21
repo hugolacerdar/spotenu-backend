@@ -1,16 +1,16 @@
 import BaseDB from "./base/BaseDB";
-import Playlist, { Permission } from "../model/Playlist";
+import Playlist, { Permission, GetByIdDTO, CreateDTO, AddMusicDTO, RemoveMusicDTO, IsMusicAlreadyInDTO, IsUserFollowingDTO, GetByUserIdDTO, TurnPlaylistPublicDTO, EditNameDTO } from "../model/Playlist";
 
 export default class PlaylistDB extends BaseDB {
 
-    public async getById(id: string): Promise<Playlist | undefined> {
+    public async getById(dto: GetByIdDTO): Promise<Playlist | undefined> {
         const playlist = await this.getConnection().raw(`
         SELECT id_playlist AS id, 
         name, 
         id_creator AS creatorId, 
         permission 
         FROM ${this.tableNames.playlists}
-        WHERE id_playlist = "${id}";
+        WHERE id_playlist = "${dto.playlistId}";
     `)
 
         const input = playlist[0][0];
@@ -27,36 +27,36 @@ export default class PlaylistDB extends BaseDB {
         )
     }
 
-    public async create(id_playlist: string, name: string, id_creator: string): Promise<void> {
+    public async create(dto: CreateDTO): Promise<void> {
         await this.getConnection().raw(`
             INSERT ${this.tableNames.playlists}() 
-            VALUES("${id_playlist}", 
-                    "${name}", 
-                    "${id_creator}", 
+            VALUES("${dto.playlistId}", 
+                    "${dto.name}", 
+                    "${dto.creatorId}", 
                     "${Permission.PRIVATE}");
         `);
     }
 
-    public async addMusic(id_playlist: string, id_music: string): Promise<void> {
+    public async addMusic(dto: AddMusicDTO): Promise<void> {
         await this.getConnection().raw(`
-            INSERT ${this.tableNames.playlistMusic}() VALUES("${id_playlist}", "${id_music}");
+            INSERT ${this.tableNames.playlistMusic}() VALUES("${dto.playlistId}", "${dto.musicId}");
         `);
     };
 
-    public async removeMusic(id_playlist: string, id_music: string): Promise<void> {
+    public async removeMusic(dto: RemoveMusicDTO): Promise<void> {
         await this.getConnection().raw(`
             DELETE FROM ${this.tableNames.playlistMusic}
-            WHERE id_playlist = "${id_playlist}"
-            AND id_music = "${id_music}";
+            WHERE id_playlist = "${dto.playlistId}"
+            AND id_music = "${dto.musicId}";
         `);
     };
 
-    public async isMusicAlreadyIn(id_music: string, id_playlist: string): Promise<boolean> {
+    public async isMusicAlreadyIn(dto: IsMusicAlreadyInDTO): Promise<boolean> {
         const count = await this.getConnection().raw(`
             SELECT COUNT(*) AS value
             FROM ${this.tableNames.playlistMusic}
-            WHERE id_playlist = "${id_playlist}"
-            AND id_music = "${id_music}";
+            WHERE id_playlist = "${dto.playlistId}"
+            AND id_music = "${dto.musicId}";
         `);
 
         if (count[0][0].value === 0) {
@@ -66,12 +66,12 @@ export default class PlaylistDB extends BaseDB {
         return true;
     }
 
-    public async isUserFollowing(userId: string, playlistId: string): Promise<boolean> {
+    public async isUserFollowing(dto: IsUserFollowingDTO): Promise<boolean> {
         const count = await this.getConnection().raw(`
             SELECT COUNT(*) AS value
             FROM ${this.tableNames.playlistUser}
-            WHERE id_playlist = "${playlistId}"
-            AND id_follower = "${userId}";
+            WHERE id_playlist = "${dto.playlistId}"
+            AND id_follower = "${dto.userId}";
         `);
 
         if (count[0][0].value === 0) {
@@ -81,17 +81,17 @@ export default class PlaylistDB extends BaseDB {
         return true;
     }
 
-    public async getPlaylistsByUserId(id_user: string, page: number): Promise<any> {
+    public async getPlaylistsByUserId(dto: GetByUserIdDTO): Promise<any> {
 
-        const offset: number = 10 * (page - 1);
+        const offset: number = 10 * (dto.page - 1);
 
         const playlists = await this.getConnection().raw(`
             SELECT DISTINCTROW name, p.id_playlist AS id
             FROM ${this.tableNames.playlists} AS p
-            INNER JOIN ${this.tableNames.playlistUser} AS pu
+            LEFT JOIN ${this.tableNames.playlistUser} AS pu
             ON id_creator = id_follower OR p.id_playlist = pu.id_playlist
-            WHERE id_creator = "${id_user}"
-            OR id_follower = "${id_user}"
+            WHERE id_creator = "${dto.userId}"
+            OR id_follower = "${dto.userId}"
             LIMIT 10
             OFFSET ${offset}; 
         `);
@@ -101,20 +101,20 @@ export default class PlaylistDB extends BaseDB {
         return result;
     }
 
-    public async turnPlaylistPublic(playlistId: string): Promise<void> {
+    public async turnPlaylistPublic(dto: TurnPlaylistPublicDTO): Promise<void> {
 
         const playlists = await this.getConnection().raw(`
             UPDATE ${this.tableNames.playlists}
             SET permission = "${Permission.PUBLIC}"
-            WHERE id_playlist = "${playlistId}";
+            WHERE id_playlist = "${dto.playlistId}";
         `);
     }
 
-    public async editName(playlistId: string, newName: string): Promise<void> {
+    public async editName(dto: EditNameDTO): Promise<void> {
         await this.getConnection().raw(`
             UPDATE ${this.tableNames.playlists}
-            SET name = "${newName}"
-            WHERE id_playlist = "${playlistId}";
+            SET name = "${dto.newName}"
+            WHERE id_playlist = "${dto.playlistId}";
         `)
     }
 

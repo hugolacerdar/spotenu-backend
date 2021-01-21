@@ -1,38 +1,39 @@
 import BaseDB from "./base/BaseDB";
+import Music, { GetMusicByTextOutput, CreateMusicDTO, GetMusicByTextDTO, GetMusicDataByIdDTO, EditMusicNameDTO, ChangeMusicAlbumDTO, DeleteMusicDTO } from "../model/Music";
 
 export default class MusicDB extends BaseDB {
 
-    public async create(id_music: string, title: string, id_album: string): Promise<void> {
+    public async create(createMusicDTO: CreateMusicDTO): Promise<void> {
         await this.getConnection().raw(`
-            INSERT ${this.tableNames.musics}() VALUES("${id_music}", "${title}", "${id_album}");
+            INSERT ${this.tableNames.musics}() VALUES("${createMusicDTO.musicId}", "${createMusicDTO.title}", "${createMusicDTO.albumId}");
         `);
     }
 
-    public async getMusicsByText(text: string, page: number): Promise<any> {
-        const offset: number = 10 * (page - 1);
+    public async getMusicsByText(getMusicByTextDTO: GetMusicByTextDTO): Promise<GetMusicByTextOutput[] | undefined> {
+        const offset: number = 10 * (getMusicByTextDTO.page - 1);
 
         const musics = await this.getConnection().raw(`
             SELECT id_music AS id, name
             FROM ${this.tableNames.musics}
-            WHERE name LIKE "%${text}%"
+            WHERE name LIKE "%${getMusicByTextDTO.text}%"
             LIMIT 10
             OFFSET ${offset}
         `)
 
-        const result = musics[0].map(
+        const result: GetMusicByTextOutput[] = musics[0].map(
             (music: any) => {
-                return {
-                    id: music.id,
-                    title: music.name
-                };
-            }
+                return new GetMusicByTextOutput(
+                    music.id, 
+                    music.name
+                    );
+                }
         );
 
         return result;
     }
 
-    public async getMusicDataById(id_music: string): Promise<any | undefined> {
-        const dataRaw = await this.getConnection().raw(`
+    public async getMusicDataById(getMusicDataByIdDTO: GetMusicDataByIdDTO): Promise<Music | undefined> {
+        const rawData = await this.getConnection().raw(`
         SELECT
             id_music AS idMusic, 
             ${this.tableNames.musics}.name AS musicTitle, 
@@ -51,15 +52,15 @@ export default class MusicDB extends BaseDB {
             USING(id_genre)
         INNER JOIN sptn_user
             ON id_band = id_user
-        WHERE id_music = "${id_music}";
+        WHERE id_music = "${getMusicDataByIdDTO.id}";
         `);
 
-        if(!dataRaw) {
+        if (!rawData[0]) {
             return undefined;
         };
 
-        const data = dataRaw[0]; 
-    
+        const data = rawData[0];
+
         const genresId = data.map((item: any) => {
             return item.idGenre;
         });
@@ -68,50 +69,48 @@ export default class MusicDB extends BaseDB {
             return item.genreName;
         });
 
-        const result = {
-            musicId: data[0].idMusic,
-            musicTitle: data[0].musicTitle,
-            albumId: data[0].idAlbum,
-            albumTitle: data[0].albumTitle,
-            bandId: data[0].idBand,
-            bandName: data[0].bandName,
+        const result = new Music(
+            data[0].idMusic,
+            data[0].musicTitle,
+            data[0].idAlbum,
+            data[0].albumTitle,
+            data[0].idBand,
+            data[0].bandName,
             genresId,
-            genresName           
-        }
+            genresName)
 
         return result;
     }
 
-    public async editName(musicId: string, newName: string): Promise<void> {
-        
+    public async editName(editMusicNameDTO: EditMusicNameDTO): Promise<void> {
+
         await this.getConnection().raw(`
             UPDATE ${this.tableNames.musics}
-            SET name = "${newName}"
-            WHERE id_music = "${musicId}";
+            SET name = "${editMusicNameDTO.newName}"
+            WHERE id_music = "${editMusicNameDTO.id}";
         `)
     }
 
-    public async changeAlbum(musicId: string, albumId: string): Promise<void> {
-        
+    public async changeAlbum(changeMusicAlbumDTO: ChangeMusicAlbumDTO): Promise<void> {
+
         await this.getConnection().raw(`
             UPDATE ${this.tableNames.musics}
-            SET id_album = "${albumId}"
-            WHERE id_music = "${musicId}";
+            SET id_album = "${changeMusicAlbumDTO.albumId}"
+            WHERE id_music = "${changeMusicAlbumDTO.musicId}";
         `)
     }
 
-    public async delete(musicId: string): Promise<void> {
+    public async delete(deleteMusicDTO: DeleteMusicDTO): Promise<void> {
         await this.getConnection().raw(`
             DELETE FROM ${this.tableNames.playlistMusic}
-            WHERE id_music = "${musicId}";
+            WHERE id_music = "${deleteMusicDTO.id}";
         `)
 
         await this.getConnection().raw(`            
             DELETE FROM ${this.tableNames.musics}
-            WHERE id_music = "${musicId}";
-
+            WHERE id_music = "${deleteMusicDTO.id}";
         `)
     }
 
-    
+
 }

@@ -78,6 +78,7 @@ export default class UserDB extends BaseDB {
         );
     }
 
+
     public async createUser(user: User): Promise<void> {
 
         if (user.getRole() === UserRole.BAND) {
@@ -88,8 +89,8 @@ export default class UserDB extends BaseDB {
                 username: user.getUsername(),
                 role: user.getRole(),
                 password: user.getPassword(),
-                isApproved: false,
-                isBlocked: false
+                isApproved: user.getApprovalStatus(),
+                isBlocked: user.getBlockedStatus()
             }
 
             const descToInsert = {
@@ -98,7 +99,7 @@ export default class UserDB extends BaseDB {
             }
 
             await this.getConnection().raw(`
-                INSERT ${this.tableNames.users}() VALUES("${userToInsert.id}", "${userToInsert.name}", "${userToInsert.email}", "${userToInsert.username}", "${userToInsert.role}", "${userToInsert.password}", ${userToInsert.isApproved}, ${user.getBlockedStatus});
+                INSERT ${this.tableNames.users}() VALUES("${userToInsert.id}", "${userToInsert.name}", "${userToInsert.email}", "${userToInsert.username}", "${userToInsert.role}", "${userToInsert.password}", ${userToInsert.isApproved}, ${userToInsert.isBlocked});
                 `);
             await this.getConnection().raw(`INSERT ${this.tableNames.description}() VALUES("${descToInsert.id}", "${descToInsert.description}")`);
         } else {
@@ -107,6 +108,8 @@ export default class UserDB extends BaseDB {
             `)
         }
     }
+
+
 
     public async getAllBands(): Promise<any> {
 
